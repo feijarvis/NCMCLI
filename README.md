@@ -6,19 +6,19 @@
 $ ncm list 5
 your-account · 我喜欢的音乐 · 128 首
 
-#    歌名                              歌手              专辑         时长
-1    Sample Track One          Artist B      未知专辑     3:28
-2    Sample Track Two                            Artist C            Sample Track Two       2:47
-3    Sample Track Three                            Artist D          Sample Track Three       1:38
-4    Sample Track Four                            Artist E            Sample Track Four       4:56
-5    Sample Track Five           Artist F            Sample Track Five     3:30
+#    歌名                    歌手         专辑        时长
+1    Sample Track One        Artist A     Album X     3:28
+2    Sample Track Two        Artist B     Album Y     2:47
+3    Sample Track Three      Artist C     Album Z     1:38
+4    Sample Track Four       Artist D     Album W     4:56
+5    Sample Track Five       Artist E     Album V     3:30
 
-$ ncm play 178
-▶ #178 Sample Track — Artist A  [无损 1007k]
+$ ncm play 42
+▶ #42 Sample Track — Artist A  [无损 1007k]
 
 $ ncm now
 ▶ Sample Track — Artist A
-  #178  [========>                 ]  1:12 / 4:07  85%  无损 1007k
+  #42  [========>                 ]  1:12 / 4:07  85%  无损 1007k
   《Album X》
 ```
 
@@ -36,7 +36,7 @@ $ ncm now
 ## 特性
 
 - **零界面**：纯终端，客户端可以完全不开（进程都不需要）
-- **读你自己的账号**：`/api/nuser/account/get` 拿 uid → 拿「我喜欢的音乐」→ 128 首完整列表
+- **读你自己的账号**：`/api/nuser/account/get` 拿 uid → 拿「我喜欢的音乐」→ 完整列表
 - **最高音质**：Hi-Res / 无损 FLAC / 320k 按账号权限自动降级
 - **自动连播**：播完自动下一首，卡死自动跳过
 - **登录态自检**：cookie 失效时会明确告诉你「是过期，不是没版权」
@@ -68,15 +68,15 @@ ncm list 20
 
 ```
  NCM  your-account · 我喜欢的音乐 · 128 首   ▶ Sample Track — Artist A
-#    歌名                              歌手            时长  │
- 1   Sample Track One          Artist B    3:28  │
-▸2   Sample Track Two                            Artist C          2:47  │   正在播放
- 3   Sample Track Three                            Artist D        1:38  │
- 4   Sample Track Four                            Artist E          4:56  │   Sample Track
- 5   Sample Track Five           Artist F          3:30  │   Artist A
- 6   不配说爱我                        常艾非          3:36  │   《Album X》
- 7   望故乡 (Live版)                   于冬然 / 文夫   4:21  │
- 8   乱世巨星（电影《97古惑仔…》）      陈小春          3:19  │   ━━━━━──────
+#    歌名                    歌手         时长  │
+ 1   Sample Track One        Artist A     3:28  │
+▸2   Sample Track Two        Artist B     2:47  │   正在播放
+ 3   Sample Track Three      Artist C     1:38  │
+ 4   Sample Track Four       Artist D     4:56  │   Sample Track
+ 5   Sample Track Five       Artist E     3:30  │   Artist A
+ 6   Sample Track Six        Artist F     3:36  │   《Album X》
+ 7   Sample Track Seven      Artist G     4:21  │
+ 8   Sample Track Eight      Artist H     3:19  │   ━━━━━──────
                                                           │   1:12 / 4:07
                                                           │   无损 1007k
 ↑↓ 选择 · Enter 播放 · Space 暂停 · n/b 切歌 · / 搜索 · q 退出

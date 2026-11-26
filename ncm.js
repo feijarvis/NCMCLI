@@ -31,7 +31,7 @@ function clientExe() {
     const m = out.match(/^"([^"]+)"/) || out.match(/^([^\s]+?\.exe)/i);
     if (m && fs.existsSync(m[1])) return m[1];
   } catch {}
-  for (const c of ["C:/Program Files/CloudMusic/cloudmusic.exe", "C:/Program Files/CloudMusic/cloudmusic.exe"]) if (fs.existsSync(c)) return c;
+  for (const c of ["C:/Program Files/CloudMusic/cloudmusic.exe", "C:/Program Files (x86)/CloudMusic/cloudmusic.exe"]) if (fs.existsSync(c)) return c;
   return null;
 }
 

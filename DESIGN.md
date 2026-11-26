@@ -29,8 +29,8 @@ Windows 的 `GlobalSystemMediaTransportControlsSessionManager` 能读到当前�
 
 **探明的事实**：
 
-- 能读到 `cloudmusic.exe | Sample Track | Artist A | Playing`
-- 发控制指令**真实生效**（歌名从「Sample Track」变成「Sample Track Six」）
+- 能读到 `cloudmusic.exe | 歌曲名 | 歌手 | Playing`
+- 发控制指令**真实生效**（媒体信息随切歌更新）
 - 但 `GetTimelineProperties()` 恒返回 `00:00:00` —— 网易云没有实现 timeline，拿不到进度
 
 **不能做选歌**，只能做上一个/下一个/播放/暂停。而且 `cloudmusic.exe` 每次重启后不一定重新注册会话（实测杀掉重启后 `GetSessions()` 返回 0）。
@@ -129,9 +129,9 @@ Node 的 `crypto` 全包了，RSA 部分用 `BigInt` 做模幂（不需要 `jsen
 
 | 曲目 | standard | exhigh | lossless | hires |
 |---|---|---|---|---|
-| Sample Track | 128k | 320k | 1007k | 1007k |
-| Sample Track Five(VIP) | 128k | 320k | 886k | **1656k** |
-| Sample Track One | 128k | 128k | 128k | 128k |
+| 歌曲 A | 128k | 320k | 1007k | 1007k |
+| 歌曲 B（VIP） | 128k | 320k | 886k | **1656k** |
+| 歌曲 C（源仅 128k） | 128k | 128k | 128k | 128k |
 
 所以按 `hires → lossless → exhigh` 逐个试，取第一个有 url 的。请求失败/为空才降级，正常情况下第一次命中，延迟约 200ms。
 
