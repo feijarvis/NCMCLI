@@ -286,7 +286,8 @@ async function shell() {
         const out = await runOne(l);
         if (out === "__QUIT__") { rl.close(); return; }
         console.log(out + "\n");
-        if (/^\d+$/.test(l) || ["p", "play", "n", "next", "b", "prev", "pa", "pause", "r", "resume", "t", "toggle"].includes(l.split(/\s+/)[0])) {
+        // 切歌/播放命令本身已打印曲目信息，只有暂停类命令才需要补状态
+        if (["pa", "pause", "r", "resume", "t", "toggle"].includes(l.split(/\s+/)[0])) {
           console.log(await stateLine() + "\n");
         }
       } catch (e) {
