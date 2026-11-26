@@ -62,7 +62,43 @@ ncm login                # 绑定账号
 ncm list 20
 ```
 
+## 全屏界面（TUI）
+
+敲 `ncm ui` 进入全屏播放器：
+
+```
+ NCM  your-account · 我喜欢的音乐 · 128 首   ▶ Sample Track — Artist A
+#    歌名                              歌手            时长  │
+ 1   Sample Track One          Artist B    3:28  │
+▸2   Sample Track Two                            Artist C          2:47  │   正在播放
+ 3   Sample Track Three                            Artist D        1:38  │
+ 4   Sample Track Four                            Artist E          4:56  │   Sample Track
+ 5   Sample Track Five           Artist F          3:30  │   Artist A
+ 6   不配说爱我                        常艾非          3:36  │   《Album X》
+ 7   望故乡 (Live版)                   于冬然 / 文夫   4:21  │
+ 8   乱世巨星（电影《97古惑仔…》）      陈小春          3:19  │   ━━━━━──────
+                                                          │   1:12 / 4:07
+                                                          │   无损 1007k
+↑↓ 选择 · Enter 播放 · Space 暂停 · n/b 切歌 · / 搜索 · q 退出
+```
+
+| 按键 | 作用 |
+|---|---|
+| `↑` `↓` / `j` `k` | 移动选中 |
+| `PgUp` `PgDn` | 翻页 |
+| `g` / `G` | 首行 / 末行 |
+| `Enter` | 播放选中 |
+| `Space` | 暂停 / 继续 |
+| `n` / `b` | 下一首 / 上一首 |
+| `/` | 搜索过滤（输完回车确认播放，Esc 取消） |
+| `q` / `Ctrl+C` | 退出 |
+
+终端宽度 ≥ 92 列时右侧显示播放面板（曲目 / 专辑 / 进度条 / 音质）；窄屏自动切单栏。
+
+`ncm ui --dump` 可在不支持全屏的环境下预览一帧纯文本布局。
+
 ## 交互模式（推荐）
+
 
 直接敲 `ncm` 不带参数，进入交互 shell，后面一条条敲就行，不用反复 `ncm xxx`：
 

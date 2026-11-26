@@ -110,6 +110,7 @@ async function runOne(line) {
       "  vol <0-100>     音量              v 60",
       "  now             当前状态          （回车也行）",
       "  stop            停止",
+      "  (退出后 ncm ui 进入全屏界面)",
       "  quit            （单命令）关闭后台服务",
       "  q               退出交互模式（音乐继续放）",
     ].join("\n");
@@ -290,6 +291,11 @@ async function shell() {
 /* ---------- 单命令模式 ---------- */
 async function main() {
   const argv = process.argv.slice(2);
+  if (argv[0] === "ui" || argv[0] === "tui") {
+    const { spawnSync } = require("child_process");
+    const r = spawnSync(process.execPath, [path.join(DIR, "tui.js"), ...argv.slice(1)], { stdio: "inherit" });
+    process.exit(r.status ?? 0);
+  }
   if (argv.length === 0) return shell();
   try {
     const out = await runOne(argv.join(" "));
