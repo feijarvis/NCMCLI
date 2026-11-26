@@ -123,13 +123,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 function log(msg) { try { fs.appendFileSync(path.join(DIR, "daemon.log"), new Date().toISOString() + " " + msg + "\n"); } catch {} }
 
 /* ---------- 状态 ---------- */
-const st = { playing: false, paused: false, cur: null, vol: VOLUME, mode: "list" };
+const st = { playing: false, paused: false, cur: null, vol: VOLUME, playMode: "order" };
+const backStack = [];
+const MODES = ["order", "single", "shuffle"];
 cmd("VOL " + VOLUME);
 setTimeout(() => { try { loadLib(); } catch (e) { log("lib: " + e.message); } }, 100);
 async function poll() { cmd("STATUS"); }
 setInterval(poll, 700);
 
-async function playSong(t) {
+async function playSong(t, noBack) {
   let s;
   try { s = songUrl(t.id); } catch (e) { s = null; log("url: " + e.message); }
   if (!s) {
@@ -138,17 +140,21 @@ async function playSong(t) {
     return { ok: false, err: `《${t.title}》无可用音源（版权/VIP 限制）`, track: t };
   }
   auth.ok = true; auth.checkedAt = Date.now();
+  if (!noBack && st.cur && st.cur.n !== t.n) {
+    backStack.push(st.cur.n);
+    if (backStack.length > 200) backStack.shift();
+  }
   st.cur = { ...t, fmtDur: fmt(t.ms), br: s.br, type: s.type, q: quality(s) };
   st.playing = true; st.paused = false;
   lastStatus = { pos: 0, dur: 0 };
   cmd("PLAY " + s.url);
   return { ok: true, track: st.cur, br: s.br, q: st.cur.q };
 }
-async function playIndex(n) {
+async function playIndex(n, noBack) {
   const L = loadLib();
   const t = L.tracks.find(x => x.n === n);
   if (!t) return { ok: false, err: `序号 ${n} 超出 1-${L.tracks.length}` };
-  return playSong(t);
+  return playSong(t, noBack);
 }
 function searchAll(q) {
   const r = get(`/api/search/get?s=${encodeURIComponent(q)}&type=1&limit=12`);
@@ -167,15 +173,46 @@ function songDetail(id) {
   if (!x) return null;
   return { id: x.id, title: x.name, artist: (x.ar || x.artists || []).map(a => a.name).join(" / "), album: (x.al || x.album || {}).name || "", ms: x.dt || x.duration || 0 };
 }
-async function next(auto) {
+function pickNext(auto, exclude = new Set()) {
   const L = loadLib();
   const cur = st.cur;
+  const total = L.tracks.length;
+  if (!cur) return 1;
+  // 单曲循环只影响"播完自动续播"；手动切歌、跳过无音源时都按顺序走
+  if (auto && st.playMode === "single" && exclude.size === 0) return cur.n;
+  if (st.playMode === "shuffle") {
+    for (let i = 0; i < 60; i++) {
+      const n = 1 + Math.floor(Math.random() * total);
+      if (n !== cur.n && !exclude.has(n)) return n;
+    }
+    return cur.n;
+  }
+  let n = cur.n;
+  for (let i = 0; i < total; i++) {
+    n = n + 1 > total ? 1 : n + 1;
+    if (!exclude.has(n)) return n;
+  }
+  return cur.n;
+}
+
+async function next(auto) {
+  const skip = new Set();
+  for (let i = 0; i < 6; i++) {
+    const n = pickNext(auto && i === 0, skip);
+    const r = await playIndex(n);
+    if (r.ok) return skip.size ? { ...r, skippedCount: skip.size } : r;
+    if (r.authFail) return r;
+    skip.add(n);
+  }
+  return { ok: false, err: `连续 ${skip.size} 首无可用音源（版权限制）` };
+}
+
+async function prevTrack() {
+  const L = loadLib();
+  const cur = st.cur;
+  if (backStack.length) return playIndex(backStack.pop(), true);
   if (!cur) return playIndex(1);
-  let n = cur.n + 1;
-  if (n > L.tracks.length) n = 1;
-  const r = await playIndex(n);
-  if (!r.ok && auto) return { ...r, skipped: true };
-  return r;
+  return playIndex(cur.n > 1 ? cur.n - 1 : L.tracks.length);
 }
 
 /* ---------- HTTP ---------- */
@@ -186,7 +223,7 @@ const server = http.createServer(async (req, res) => {
   try {
     switch (u.pathname) {
       case "/status":
-        return send({ ok: true, dir: DIR, playing: st.playing, paused: st.paused, pos: lastStatus.pos, dur: lastStatus.dur || (st.cur?.ms || 0) / 1000, cur: st.cur, vol: st.vol, auth });
+        return send({ ok: true, dir: DIR, playing: st.playing, paused: st.paused, pos: lastStatus.pos, dur: lastStatus.dur || (st.cur?.ms || 0) / 1000, cur: st.cur, vol: st.vol, auth, playMode: st.playMode });
       case "/list": {
         const L = loadLib(q.refresh === "1");
         return send({ ok: true, nick: L.nick, playlist: L.playlist, tracks: L.tracks });
@@ -209,15 +246,19 @@ const server = http.createServer(async (req, res) => {
         return send({ ok: true, result: searchAll(q.q) });
       }
       case "/next": return send(await next(false));
-      case "/prev": {
-        const cur = st.cur;
-        return send(await playIndex(cur ? Math.max(1, cur.n - 1) : 1));
-      }
+      case "/prev": return send(await prevTrack());
       case "/pause": cmd("PAUSE"); st.paused = true; return send({ ok: true, paused: true });
       case "/resume": cmd("RESUME"); st.paused = false; st.playing = true; return send({ ok: true, paused: false });
       case "/toggle": {
         if (st.paused) { cmd("RESUME"); st.paused = false; } else { cmd("PAUSE"); st.paused = true; }
         return send({ ok: true, paused: st.paused });
+      }
+      case "/mode": {
+        if (q.m) {
+          if (!MODES.includes(q.m)) return send({ ok: false, err: "模式须为 order | single | shuffle" }, 400);
+          st.playMode = q.m;
+        }
+        return send({ ok: true, playMode: st.playMode });
       }
       case "/stop": cmd("STOP"); st.playing = false; st.paused = false; st.cur = null; return send({ ok: true });
       case "/vol": {

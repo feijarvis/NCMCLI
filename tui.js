@@ -31,6 +31,8 @@ const padR = (s, n) => { s = String(s ?? ""); const d = n - w(s); return d > 0 ?
 const fmt = ms => { const s = Math.round((ms || 0) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 
 /* ---------- 状态 ---------- */
+const MODE_CN = { order: "顺序", single: "单曲循环", shuffle: "随机" };
+
 const st = {
   nick: "", plName: "", tracks: [], view: [], sel: 0, top: 0,
   status: { cur: null, pos: 0, dur: 0, paused: false, vol: 0.85 },
@@ -128,6 +130,7 @@ function renderLines() {
       right.push(L(`\x1b[90m${fmt(st.status.pos * 1000)} / ${fmt((st.status.dur || 0) * 1000)}\x1b[0m`));
       right.push("");
       right.push(L(`\x1b[33m${cur.q || ""}\x1b[0m \x1b[90m\u97f3\u91cf ${Math.round((st.status.vol || 0) * 100)}%\x1b[0m`));
+      right.push(L(`\x1b[36m${MODE_CN[st.status.playMode] || "\u987a\u5e8f"}\x1b[0m\x1b[90m \u00b7 m \u5207\u6362\x1b[0m`));
     } else {
       right.push(L("\x1b[90m\u672a\u64ad\u653e\x1b[0m"));
     }
@@ -143,7 +146,7 @@ function renderLines() {
   /* 底部 */
   const help = st.mode === "search"
     ? `\x1b[36m\u641c\u7d22: ${st.search}\x1b[0m\x1b[90m  Enter \u64ad\u653e \u00b7 Esc \u53d6\u6d88\x1b[0m`
-    : `\x1b[90m\u2191\u2193 \u9009\u62e9 \u00b7 Enter \u64ad\u653e \u00b7 Space \u6682\u505c \u00b7 n/b \u5207\u6b4c \u00b7 / \u641c\u7d22 \u00b7 q \u9000\u51fa\x1b[0m`;
+    : `\x1b[90m\u2191\u2193 \u9009\u62e9 \u00b7 Enter \u64ad\u653e \u00b7 Space \u6682\u505c \u00b7 n/b \u5207\u6b4c \u00b7 \x1b[0m\x1b[33mm \u6a21\u5f0f:${MODE_CN[st.status.playMode] || "\u987a\u5e8f"}\x1b[0m\x1b[90m \u00b7 / \u641c\u7d22 \u00b7 q \u9000\u51fa\x1b[0m`;
   out.push(vpad(st.msg && Date.now() - st.msgAt < 2500 ? `\x1b[32m${st.msg}\x1b[0m` : help, W));
 
   return out;
@@ -205,6 +208,18 @@ async function handleKey(s) {
         else flash("✗ " + r.err);
       } catch (e) { flash("✗ " + e.message); }
       await refreshStatus();
+      draw();
+      break;
+    }
+    case "m": {
+      const order = ["order", "single", "shuffle"];
+      const cur = st.status.playMode || "order";
+      const nxt = order[(order.indexOf(cur) + 1) % order.length];
+      try {
+        const r = await api("/mode?m=" + nxt, 10000);
+        st.status.playMode = r.playMode;
+        flash("播放模式: " + (MODE_CN[r.playMode] || r.playMode));
+      } catch (e) { flash("✗ " + e.message); }
       draw();
       break;
     }

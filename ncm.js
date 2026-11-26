@@ -81,12 +81,17 @@ const ALIAS = {
   now: "now", st: "now", status: "now",
   h: "help", help: "help", "?": "help",
   stop: "stop",
+  m: "mode", mode: "mode",
+  shuffle: "mode", single: "mode", order: "mode", random: "mode",
 };
+const MODE_MAP = { shuffle: "shuffle", random: "shuffle", single: "single", order: "order" };
+
+const MODE_CN = { order: "顺序", single: "单曲循环", shuffle: "随机" };
 
 async function stateLine() {
   const s = await req("/status", 5000);
   if (!s.cur) return "○ 未播放";
-  return `${s.paused ? "⏸" : "▶"} ${s.cur.title} — ${s.cur.artist}  ${fmt(s.pos * 1000)}/${fmt((s.dur || 0) * 1000)}  ${s.cur.q || ""}`;
+  return `${s.paused ? "⏸" : "▶"} ${s.cur.title} — ${s.cur.artist}  ${fmt(s.pos * 1000)}/${fmt((s.dur || 0) * 1000)}  ${s.cur.q || ""}  ${MODE_CN[s.playMode] || ""}`;
 }
 
 async function runOne(line) {
@@ -109,6 +114,7 @@ async function runOne(line) {
       "  toggle          切换              t",
       "  vol <0-100>     音量              v 60",
       "  now             当前状态          （回车也行）",
+      "  mode [类型]     播放模式          m / m shuffle",
       "  stop            停止",
       "  (退出后 ncm ui 进入全屏界面)",
       "  quit            （单命令）关闭后台服务",
@@ -177,7 +183,8 @@ async function runOne(line) {
   if (cmd === "next" || cmd === "prev") {
     const r = await req("/" + cmd);
     if (!r.ok) throw new Error(r.err);
-    return `▶ #${r.track.n} ${r.track.title} — ${r.track.artist}  [${r.q || ""}]`;
+    const skip = r.skippedCount ? `（跳过 ${r.skippedCount} 首无音源）` : "";
+    return `▶ #${r.track.n} ${r.track.title} — ${r.track.artist}  [${r.q || ""}]${skip}`;
   }
 
   if (cmd === "pause" || cmd === "resume" || cmd === "toggle") {
@@ -192,6 +199,19 @@ async function runOne(line) {
     return `音量 ${Math.round(r.vol * 100)}`;
   }
 
+  if (cmd === "mode") {
+    // shuffle / single / order 这些词本身带参数
+    const want = MODE_MAP[parts[0]] || rest[0];
+    if (!want) {
+      const s = await req("/status", 5000);
+      return `播放模式: ${MODE_CN[s.playMode] || s.playMode}（order 顺序 / single 单曲循环 / shuffle 随机）`;
+    }
+    if (!["order", "single", "shuffle"].includes(want)) throw new Error("模式须为 order / single / shuffle");
+    const r = await req("/mode?m=" + want);
+    if (!r.ok) throw new Error(r.err);
+    return `播放模式: ${MODE_CN[r.playMode]}`;
+  }
+
   if (cmd === "stop") {
     await req("/stop");
     return "已停止";
@@ -203,7 +223,7 @@ async function runOne(line) {
     if (s.auth && s.auth.ok === false) out.push("[!] 登录态已失效（cookie 过期）→ 运行 ncm login 刷新", "");
     if (!s.cur) { out.push(`未播放 · list 看歌单${s.auth?.ok ? " · 账号 " + (s.auth.nick || "已登录") : ""}`); return out.join("\n"); }
     out.push(`${s.paused ? "⏸" : "▶"} ${s.cur.title} — ${s.cur.artist}`);
-    out.push(`  #${s.cur.n}  ${bar(s.pos, s.dur)}  ${fmt(s.pos * 1000)} / ${fmt((s.dur || 0) * 1000)}  ${Math.round(s.vol * 100)}%  ${s.cur.q || ""}`);
+    out.push(`  #${s.cur.n}  ${bar(s.pos, s.dur)}  ${fmt(s.pos * 1000)} / ${fmt((s.dur || 0) * 1000)}  ${Math.round(s.vol * 100)}%  ${s.cur.q || ""}  ${MODE_CN[s.playMode] || ""}`);
     if (s.cur.album) out.push(`  《${s.cur.album}》`);
     return out.join("\n");
   }
