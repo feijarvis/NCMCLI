@@ -1,0 +1,10 @@
+# 登录态与运行时数据（绝不入库）
+cookie.txt
+cookie.bak
+tracks.json
+daemon.log
+*.log
+
+# 分发包与运行时
+node.exe
+dist/
