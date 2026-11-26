@@ -197,6 +197,28 @@ CLI 直接访问了 `d.playlist.name`，而 daemon 返回的是 `{ok:false, err}
 
 ---
 
+## 4.9 交互模式：readline 的两个坑
+
+用户反馈"每次都要重新敲 ncm xxx，操作不连贯"，于是加了无参数的交互 shell。踩到两个坑：
+
+**坑一：监听器注册晚于首个 await**
+
+```js
+const rl = readline.createInterface({...});   // 立刻开始消费 stdin
+console.log(await stateLine());               // await 期间数据已流过
+rl.on("line", ...);                           // 注册太晚，全部丢失
+```
+
+管道输入时表现为"敲了没反应"。修复：`rl.pause()` 建好后先挂监听器，打印完 banner 再 `rl.resume()`。
+
+**坑二：非 TTY 下 close 抢跑**
+
+`printf "cmd1\ncmd2\n" | ncm` 时，所有行瞬间涌入并紧接着触发 `close`。若 `close` 直接 `process.exit(0)`，异步命令队列还没跑完就被杀掉。
+
+修复：`close` 时 `await` 队列。
+
+**语义细节**：交互模式里 `q` 只退出 shell，不停止音乐（daemon 常驻）；`ncm quit`（单命令）才关后台。这是用户直觉——关掉界面不该中断播放。
+
 ## 5. 已知边界
 
 | 边界 | 说明 |
