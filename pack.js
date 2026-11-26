@@ -7,7 +7,7 @@ const { execFileSync } = require("child_process");
 const DIR = __dirname;
 const DIST = path.join(DIR, "dist");
 const OUT = path.join(DIST, "ncm");
-const KEEP = ["daemon.js", "ncm.js", "tui.js", "player.ps1", "install.js", "install.cmd", "audio-check.py"];
+const KEEP = ["daemon.js", "ncm.js", "tui.js", "player.ps1", "install.js", "install.cmd", "audio-check.py", "README.md"];
 
 fs.rmSync(DIST, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
